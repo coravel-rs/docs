@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<buildprofiles xsi:noNamespaceSchemaLocation="https://resources.jetbrains.com/writerside/1.0/build-profiles.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <variables>
+        <noindex-content>false</noindex-content>
+
+        <header-logo>coravel-logo.svg</header-logo>
+
+        <primary-color>dracula</primary-color>
+        <color-preset>Vivid</color-preset>
+
+        <algolia-index>docs</algolia-index>
+        <algolia-id>QMU30FNFQB</algolia-id>
+        <algolia-api-key>5a96cfff1dfc88fb780f17f86cd33723</algolia-api-key> <!-- Search-Only API Key -->
+
+        <versions-switcher>https://coravel.rs/docs/versions.json</versions-switcher>
+    </variables>
+    <build-profile instance="pre-alpha">
+        <variables>
+            <noindex-content>true</noindex-content>
+        </variables>
+    </build-profile>
+    <build-profile instance="v1">
+        <variables></variables>
+    </build-profile>
+    <footer>
+        <social type="linkedin" href="https://www.linkedin.com/company/coravel"/>
+        <social type="youtube" href="https://www.youtube.com/@coravel"/>
+        <social type="twitter" href="https://twitter.com/coravel"/>
+        <social type="rss" href="#"/>
+
+        <link href="https://coravel.rs">⮨ Back to Coravel.rs</link>
+        <link href="https://blog.coravel.rs">Blog</link>
+        <link href="https://github.com/coravel-rs">GitHub</link>
+
+        <copyright>2022-2023 Coravel&trade; — Documentation is licensed under CC BY-NC-SA 4.0</copyright>
+    </footer>
+</buildprofiles>

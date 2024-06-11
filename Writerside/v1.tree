@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE instance-profile SYSTEM "https://resources.jetbrains.com/writerside/1.0/product-profile.dtd">
+<instance-profile id="v1" name="Coravel" start-page="installation.v1.topic">
+    <toc-element toc-title="Getting started">
+        <toc-element topic="installation.v1.topic"/>
+    </toc-element>
+</instance-profile>
