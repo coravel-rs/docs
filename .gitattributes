@@ -1,0 +1,16 @@
+*               text eol=lf
+.*              text eol=lf
+
+*.png           binary
+*.gif           binary
+
+*.html          linguist-vendored
+*.xml           linguist-detectable
+*.cfg           linguist-detectable linguist-language=xml diff=xml
+*.list          linguist-detectable linguist-language=xml diff=xml
+*.tree          linguist-detectable linguist-language=xml diff=xml
+*.topic         linguist-detectable linguist-language=xml diff=xml
+*.md            linguist-language=markdown diff=markdown
+topics/**/*.md  linguist-detectable
+
+/.github        export-ignore
