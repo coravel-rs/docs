@@ -1,0 +1,120 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+    path:
+      - 'Writerside/**'
+
+permissions:
+  id-token: write
+  pages: write
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        version:
+          - pre-alpha
+          - v1
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Writerside docs
+        run: |
+          commands=$(cat <<EOF
+          export DISPLAY=:99
+          Xvfb :99 &
+          /opt/builder/bin/idea.sh helpbuilderinspect -source-dir /home -product Writerside/${{ matrix.version }} --runner github -output-dir /home/artifacts/ || true
+          EOF)
+          docker run --rm -v $GITHUB_WORKSPACE:/home registry.jetbrains.team/p/writerside/builder/writerside-builder:2.1.1479-p3869 /bin/bash -c "$commands"
+
+      - name: Test Writerside docs
+        run: |
+          curl -o checker.jar -sSL https://packages.jetbrains.team/maven/p/writerside/maven/com/jetbrains/writerside/writerside-ci-checker/1.0/writerside-ci-checker-1.0.jar
+          docker run --rm -v $GITHUB_WORKSPACE:/home -w /home openjdk:18-jdk-slim java -jar checker.jar artifacts/report.json Writerside/${{ matrix.version }}
+
+      - name: Publish Algolia indexes
+        env:
+          ALGOLIA_APP: ${{ vars.ALGOLIA_APP_ID }}
+          ALGOLIA_KEY: ${{ secrets.ALGOLIA_ADMIN_API_KEY }}
+        run: |
+          unzip -qq artifacts/algolia-indexes-*.zip -d indexes
+          command=$(cat <<EOF
+          algolia-key="$ALGOLIA_KEY" java -jar /opt/builder/help-publication-agent.jar update-index \
+          --application-name "$ALGOLIA_APP" \
+          --index-name docs \
+          --product coravel \
+          --version ${{ matrix.version }} \
+          --index-directory indexes/ \
+          2>&1 | tee algolia-update-index-log.txt
+          EOF)
+          docker run --rm -v $GITHUB_WORKSPACE:/home -w /home registry.jetbrains.team/p/writerside/builder/algolia-publisher:2.0.32-2 /bin/bash -c "$command"
+        continue-on-error: true
+
+      - name: Upload Writerside docs
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.version }}-docs
+          path: artifacts/webHelp*2-all.zip
+          if-no-files-found: error
+          retention-days: 7
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install dependencies
+        run: |
+          sudo apt update -y
+          sudo apt install -y jq
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            versions.json
+            redirect.html
+          sparse-checkout-cone-mode: false
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: artifacts
+
+      - name: Prepare web directory
+        run: |
+          mkdir htdocs
+          cp versions.json htdocs/
+          versions=($(jq -r '.[].version' versions.json))
+          for index in "${!versions[@]}"; do
+            version="${versions[index]}"
+            web_path="htdocs/${index}.x"
+            unzip -q "artifacts/${version}-docs/webHelp${version^^}2-all.zip" -d "$web_path"
+            sed 's;#{path};;g' redirect.html > "${web_path}/index.html"
+          done
+          current_version="$(jq -r 'map(.isCurrent) | index(true)' versions.json).x"
+          sed "s;#{path};${current_version}/;g" redirect.html > htdocs/index.html
+
+      - name: Setup GitHub Pages
+        uses: actions/configure-pages@v3
+
+      - name: Upload web directory
+        uses: actions/upload-pages-artifact@v2
+        with:
+          path: htdocs
+
+      - name: Deploy GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2
